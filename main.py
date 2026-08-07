@@ -1,9 +1,60 @@
+import sqlite3
+import os
 import random
 from datetime import date
 
-if __name__ == "__main__":
+# Funktion för att rensa skärmen mellan olika menyer.
+def clear_screen():
+    if os.name == "nt":
+        os.system("cls")
+    else:
+        os.system("clear")
+
+def main():
+    connection = sqlite3.connect("library.db")
+    crsr = connection.cursor()
+
+    sql_users = """CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    förnamn VARCHAR(40),
+    efternamn VARCHAR(40),
+    personnummer VARCHAR(40),
+    ålder INTEGER);"""
+
+    crsr.execute(sql_users)
+    connection.commit()
+
     while True:
-        name = input("Ange ditt namn (eller 'Q' för att avsluta): ")
+        print("Välkommen till biblioteket!")
+        choice = input("Har du ett konto? (J / N): ").lower()
+        if choice == "j":
+            clear_screen()
+            print("---- Logga in ----")
+            name = input("\nAnge ditt förnamn: ")
+            last_name = input("Ange ditt efternamn: ")
+            user = check_user(crsr, name, last_name)
+            if user:
+                print(f"Välkommen tillbaka, {name.capitalize()}!\n")
+            else:
+                while True:
+                    choice = input("\nKontot hittades inte. Vill du skapa ett? (J / N): ").lower()
+                    if choice == "j":
+                        clear_screen()
+                        create_user(crsr, connection)
+                    elif choice == "n":
+                        clear_screen()
+                        break
+                    else:
+                        print("Ogiltig input. Försök igen.")
+
+        elif choice == "n":
+            clear_screen()
+            create_user(crsr, connection)
+
+def create_user(crsr, connection):
+    while True:
+        print("----- Skapa ett konto -----")
+        name = input("\nAnge ditt namn (eller 'Q' för att avsluta): ")
         if name.lower() == "q":
             print("\nAvslutar...")
             break
@@ -35,6 +86,32 @@ if __name__ == "__main__":
         else:
             age = current_date.year - year
 
-        print(f"Namn: {name} {last_name}")
-        print(f"Personnummer: {personnumber}")
-        print(f"Ålder: {age}")
+        user = check_user(crsr, name, last_name)
+        if user:
+            print("\nAnvändaren finns redan.\n")
+            while True:
+                choice = input("Försök igen? (J / N): ").lower()
+                if choice == "j":
+                    clear_screen()
+                    break
+                elif choice == "n":
+                    clear_screen()
+                    main()
+        else:
+            crsr.execute(
+                "INSERT INTO users (förnamn, efternamn, personnummer, ålder) VALUES (?, ?, ?, ?)",
+                (name, last_name, personnumber, age)
+            )
+            connection.commit()
+            clear_screen()
+            break
+
+def check_user(crsr, name, last_name):
+    crsr.execute("SELECT * FROM users WHERE LOWER(förnamn) = ? AND LOWER(efternamn) = ?",
+                (name.lower(), last_name.lower())
+    )
+    result = crsr.fetchone()
+    return result
+
+if __name__ == "__main__":
+    main()
