@@ -2,6 +2,7 @@ import sqlite3
 import os
 import random
 from datetime import date
+from book import Book, books
 
 # Funktion för att rensa skärmen mellan olika menyer.
 def clear_screen():
@@ -22,6 +23,36 @@ def main():
     ålder INTEGER);"""
 
     crsr.execute(sql_users)
+
+    sql_books = """CREATE TABLE IF NOT EXISTS books (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title VARCHAR(40),
+    author VARCHAR(40),
+    release_year INTEGER);"""
+
+    crsr.execute(sql_books)
+
+    sql_loans = """CREATE TABLE IF NOT EXISTS loans (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    books_id INTEGER,
+    loan_date VARCHAR(10),
+    return_date VARCHAR(10),
+    user_id INTEGER,
+    FOREIGN KEY (books_id) REFERENCES books(id),
+    FOREIGN KEY (user_id) REFERENCES users(id));"""
+
+    crsr.execute(sql_loans)
+
+    for book in books:
+        crsr.execute("SELECT * FROM books WHERE title = ?", (book.title,))
+        existing_book = crsr.fetchone()
+
+        if not existing_book:
+                crsr.execute(
+                    "INSERT INTO books (title, author, release_year) VALUES (?, ?, ?)",
+                    (book.title, book.author, book.release_year)
+                )
+
     connection.commit()
 
     while True:
@@ -112,6 +143,8 @@ def check_user(crsr, name, last_name):
     )
     result = crsr.fetchone()
     return result
+
+
 
 if __name__ == "__main__":
     main()
