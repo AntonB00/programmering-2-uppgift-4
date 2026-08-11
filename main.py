@@ -65,7 +65,27 @@ def main():
             last_name = input("Ange ditt efternamn: ")
             user = check_user(crsr, name, last_name)
             if user:
-                print(f"Välkommen tillbaka, {name.capitalize()}!\n")
+                while True:
+                    clear_screen()
+                    print(f"Välkommen tillbaka, {name.capitalize()}!\n")
+                    print("1. Låna en bok.")
+                    print("2. Lämna tillbaka en bok.")
+                    print("3. Avsluta.")
+                    try:
+                        choice = int(input("\nVad vill du göra? (1/2): "))
+                        if choice == 1:
+                            clear_screen()
+                            available_books = show_available_books(crsr)
+                            borrow_book(crsr, connection, available_books, user[0])
+                        elif choice == 2:
+                            pass
+                        elif choice == 3:
+                            clear_screen()
+                            print("Avslutar...\n")
+                            return
+                    except ValueError:
+                        print("Ogiltigt val. Försök igen")
+
             else:
                 while True:
                     choice = input("\nKontot hittades inte. Vill du skapa ett? (J / N): ").lower()
@@ -142,9 +162,45 @@ def check_user(crsr, name, last_name):
                 (name.lower(), last_name.lower())
     )
     result = crsr.fetchone()
-    return result
+    return result 
 
+def show_available_books(crsr):
+    crsr.execute("""
+        SELECT * FROM books WHERE id NOT IN (
+            SELECT books_id FROM loans WHERE return_date IS NULL
+        )
+    """)
+    available_books = crsr.fetchall()
 
+    print("\n----- Tillgängliga böcker -----")
+    for book in available_books:
+        print(book)
+
+    return available_books
+
+def borrow_book(crsr, connection, available_books, user_id):
+    if not available_books:
+        print("\nInga tillgänglika böcker just nu.")
+        input("\nTryck Enter för att fortsätta...")
+        return
+    book_id = int(input("\nAnge ID för boken du vill låna: "))
+
+    book_found = False
+    for book in available_books:
+        if book_id == book[0]:
+            book_found = True
+
+    if book_found:
+        crsr.execute(
+            "INSERT INTO loans (books_id, user_id, loan_date) VALUES (?, ?, ?)",
+            (book_id, user_id, str(date.today()))
+        )
+        connection.commit()
+        print("\nBoken har lånats!")
+    else:
+        print("\nOgiltigt bok-ID.")
+
+    input("\nTryck Enter för att fortsätta...")
 
 if __name__ == "__main__":
     main()
