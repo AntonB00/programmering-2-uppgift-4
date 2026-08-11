@@ -8,9 +8,16 @@ class Book:
         return f"Titel: {self.title}, Författare: {self.author}, År: {self.release_year}"
 
 books = [
-    Book("Harry Potter och de vises sten", "J.K. Rowling", 1997),
-    Book("Sagan om ringen", "J.R.R. Tolkien", 1954),
     Book("1984", "George Orwell", 1949),
-    Book("Hobbit", "J.R.R. Tolkien", 1937),
-    Book("Pestens tid", "Stephen King", 1978)
+    Book("The Hobbit", "J.R.R. Tolkien", 1937),
+    Book("Harry Potter and the Philosopher's Stone", "J.K. Rowling", 1997),
+    Book("The Hunger Games", "Suzanne Collins", 2008),
+    Book("The Martian", "Andy Weir", 2011),
+    Book("The Midnight Library", "Matt Haig", 2020),
+    Book("Project Hail Mary", "Andy Weir", 2021),
+    Book("Klara and the Sun", "Kazuo Ishiguro", 2021),
+    Book("Fourth Wing", "Rebecca Yarros", 2023),
+    Book("Iron Flame", "Rebecca Yarros", 2023),
+    Book("Yellowface", "R.F. Kuang", 2023),
+    Book("Intermezzo", "Sally Rooney", 2024)
 ]

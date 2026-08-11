@@ -72,13 +72,15 @@ def main():
                     print("2. Lämna tillbaka en bok.")
                     print("3. Avsluta.")
                     try:
-                        choice = int(input("\nVad vill du göra? (1/2): "))
+                        choice = int(input("\nVad vill du göra? (1/2/3): "))
                         if choice == 1:
                             clear_screen()
                             available_books = show_available_books(crsr)
                             borrow_book(crsr, connection, available_books, user[0])
                         elif choice == 2:
-                            pass
+                            clear_screen()
+                            borrowed_books = show_borrowed_books(crsr, user[0])
+                            return_book(crsr, connection, borrowed_books)
                         elif choice == 3:
                             clear_screen()
                             print("Avslutar...\n")
@@ -92,6 +94,7 @@ def main():
                     if choice == "j":
                         clear_screen()
                         create_user(crsr, connection)
+                        break
                     elif choice == "n":
                         clear_screen()
                         break
@@ -147,7 +150,7 @@ def create_user(crsr, connection):
                     break
                 elif choice == "n":
                     clear_screen()
-                    main()
+                    return
         else:
             crsr.execute(
                 "INSERT INTO users (förnamn, efternamn, personnummer, ålder) VALUES (?, ?, ?, ?)",
@@ -174,7 +177,7 @@ def show_available_books(crsr):
 
     print("\n----- Tillgängliga böcker -----")
     for book in available_books:
-        print(book)
+        print(f"Bok-ID: {book[0]} | {book[1]} av {book[2]}, {book[3]}")
 
     return available_books
 
@@ -183,12 +186,18 @@ def borrow_book(crsr, connection, available_books, user_id):
         print("\nInga tillgänglika böcker just nu.")
         input("\nTryck Enter för att fortsätta...")
         return
-    book_id = int(input("\nAnge ID för boken du vill låna: "))
+    while True:
+        try:
+            book_id = int(input("\nAnge bok-ID för boken du vill låna: "))
+            break
+        except ValueError:
+            print("\nOgiltig input. Försök igen.")
 
     book_found = False
     for book in available_books:
         if book_id == book[0]:
             book_found = True
+            book_title = book[1]
 
     if book_found:
         crsr.execute(
@@ -196,9 +205,56 @@ def borrow_book(crsr, connection, available_books, user_id):
             (book_id, user_id, str(date.today()))
         )
         connection.commit()
-        print("\nBoken har lånats!")
+        print(f"\n{book_title} har lånats!")
     else:
         print("\nOgiltigt bok-ID.")
+
+    input("\nTryck Enter för att fortsätta...")
+
+def show_borrowed_books(crsr, user_id):
+    crsr.execute("""
+        SELECT loans.id, books.id, books.title, books.author, books.release_year
+        FROM loans
+        JOIN books ON loans.books_id = books.id
+        WHERE loans.user_id = ? AND return_date IS NULL    
+    """, (user_id,))
+
+    borrowed_books = crsr.fetchall()
+
+    print("\n----- Lånade böcker -----")
+    for book in borrowed_books:
+        print(f"Lån-ID: {book[0]} | {book[2]} av {book[3]}, {book[4]}")
+
+    return borrowed_books
+
+def return_book(crsr, connection, borrowed_books):
+    if not borrowed_books:
+        print("\nDu har inte lånat några böcker.")
+        input("\nTryck Enter för att fortsätta...")
+        return
+
+    while True:
+        try:
+            loan_id = int(input("\nAnge lån-ID för boken du vill lämna tillbaka: "))
+            break
+        except ValueError:
+            print("\nOgiltig input. Försök igen.")
+
+    loan_found = False
+    for book in borrowed_books:
+        if loan_id == book[0]:
+            loan_found = True
+            book_title = book[2]
+
+    if loan_found:
+        crsr.execute(
+            "UPDATE loans SET return_date = ? WHERE id = ?",
+            (str(date.today()), loan_id)
+        )
+        connection.commit()
+        print(f"\n{book_title} har lämnats tillbaka!")
+    else:
+        print("\nOgiltigt lån-ID.")
 
     input("\nTryck Enter för att fortsätta...")
 
