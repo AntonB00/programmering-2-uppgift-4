@@ -57,53 +57,105 @@ def main():
 
     while True:
         print("Välkommen till biblioteket!")
-        choice = input("Har du ett konto? (J / N): ").lower()
-        if choice == "j":
-            clear_screen()
-            print("---- Logga in ----")
-            name = input("\nAnge ditt förnamn: ")
-            last_name = input("Ange ditt efternamn: ")
-            user = check_user(crsr, name, last_name)
-            if user:
-                while True:
-                    clear_screen()
-                    print(f"Välkommen tillbaka, {name.capitalize()}!\n")
-                    print("1. Låna en bok.")
-                    print("2. Lämna tillbaka en bok.")
-                    print("3. Avsluta.")
-                    try:
-                        choice = int(input("\nVad vill du göra? (1/2/3): "))
-                        if choice == 1:
-                            clear_screen()
-                            available_books = show_available_books(crsr)
-                            borrow_book(crsr, connection, available_books, user[0])
-                        elif choice == 2:
-                            clear_screen()
-                            borrowed_books = show_borrowed_books(crsr, user[0])
-                            return_book(crsr, connection, borrowed_books)
-                        elif choice == 3:
-                            clear_screen()
-                            print("Avslutar...\n")
-                            return
-                    except ValueError:
-                        print("Ogiltigt val. Försök igen")
 
+        print("\n1. Logga in.")
+        print("2. Admin")
+        print("3. Avsluta")
+
+        try:
+            menu = int(input("\nVad vill du göra? (1/2/3): "))
+
+            if menu == 1:
+                clear_screen()
+                login(crsr, connection)
+            elif menu == 2:
+                clear_screen()
+                admin(crsr, connection)
+            elif menu == 3:
+                break
             else:
-                while True:
-                    choice = input("\nKontot hittades inte. Vill du skapa ett? (J / N): ").lower()
-                    if choice == "j":
-                        clear_screen()
-                        create_user(crsr, connection)
-                        break
-                    elif choice == "n":
-                        clear_screen()
-                        break
-                    else:
-                        print("Ogiltig input. Försök igen.")
+                clear_screen()
+                print("Ogiltigt val, försök igen.\n")
 
-        elif choice == "n":
+        except ValueError:
             clear_screen()
-            create_user(crsr, connection)
+            print("Ogiltigt input, försök igen.\n")
+
+def login(crsr, connection):
+    choice = input("Har du ett konto? (J / N): ").lower()
+    if choice == "j":
+        clear_screen()
+        print("---- Logga in ----")
+        name = input("\nAnge ditt förnamn: ")
+        last_name = input("Ange ditt efternamn: ")
+        user = check_user(crsr, name, last_name)
+        if user:
+            while True:
+                clear_screen()
+                print(f"Välkommen tillbaka, {name.capitalize()}!\n")
+                print("1. Låna en bok.")
+                print("2. Lämna tillbaka en bok.")
+                print("3. Logga ut.")
+                try:
+                    choice = int(input("\nVad vill du göra? (1/2/3): "))
+                    if choice == 1:
+                        clear_screen()
+                        available_books = show_available_books(crsr)
+                        borrow_book(crsr, connection, available_books, user[0])
+                    elif choice == 2:
+                        clear_screen()
+                        borrowed_books = show_borrowed_books(crsr, user[0])
+                        return_book(crsr, connection, borrowed_books)
+                    elif choice == 3:
+                        clear_screen()
+                        return
+                except ValueError:
+                    print("Ogiltigt val. Försök igen")
+
+        else:
+            while True:
+                choice = input("\nKontot hittades inte. Vill du skapa ett? (J / N): ").lower()
+                if choice == "j":
+                    clear_screen()
+                    create_user(crsr, connection)
+                    break
+                elif choice == "n":
+                    clear_screen()
+                    break
+                else:
+                    print("Ogiltig input. Försök igen.")
+
+    elif choice == "n":
+        clear_screen()
+        create_user(crsr, connection)
+    else:
+        clear_screen()
+        print("Ogiltigt val. Försök igen.\n")
+
+def admin(crsr, connection):
+    while True:
+        print("----- ADMIN -----")
+
+        print("\n1. Visa alla användare.")
+        print("2. Visa alla aktiva lån.")
+        print("3. Tillbaka.")
+        try:
+            choice = int(input("\nVad vill du göra? (1/2/3): "))
+
+            if choice == 1:
+                clear_screen()
+                show_users(crsr)
+            elif choice ==2:
+                clear_screen()
+                show_all_loans(crsr)
+            elif choice == 3:
+                clear_screen()
+                return
+            else:
+                print("Ogiltigt val. Försök igen")
+
+        except ValueError:
+            print("Ogiltig input. Försök igen.")
 
 def create_user(crsr, connection):
     while True:
@@ -117,9 +169,16 @@ def create_user(crsr, connection):
         while True:
             birthdate = input("Ange ditt födelsedatum (ÅÅÅÅMMDD): ")
             if len(birthdate) != 8:
-                print("Ogiltigt födelsedatum, ange i formatet 'ÅÅÅÅMMDD'")
-            else:
+                print("\nOgiltigt födelsedatum, ange i formatet 'ÅÅÅÅMMDD'\n")
+                continue
+
+            try:
+                year = int(birthdate[0:4])
+                month = int(birthdate[4:6])
+                day = int(birthdate[6:8])
                 break
+            except ValueError:
+                print("Ogiltigt födelsedatum, använd endast siffror.")
 
         # Skapar ett förenklat personnummer med födelsedatum och fyra slumpade siffror
         last_four = str(random.randint(1000, 9999))
@@ -127,10 +186,6 @@ def create_user(crsr, connection):
 
         # Räknar ut personens nuvarande ålder och kontrollerar om födelsedagen har varit
         current_date = date.today()
-
-        year = int(birthdate[0:4])
-        month = int(birthdate[4:6])
-        day = int(birthdate[6:8])
 
         birthday_this_year = (month, day)
         today_month_day = (current_date.month, current_date.day)
@@ -257,6 +312,51 @@ def return_book(crsr, connection, borrowed_books):
         print("\nOgiltigt lån-ID.")
 
     input("\nTryck Enter för att fortsätta...")
+
+def show_users(crsr):
+    crsr.execute("SELECT * FROM users")
+    all_users = crsr.fetchall()
+
+    print("----- Alla användare -----")
+
+    if not all_users:
+        print("\nDet finns inga användare.")
+        input("\nTryck Enter för att fortsätta...")
+        clear_screen()
+        return
+
+    for user in all_users:
+        print(f"Namn: {user[1]}, Efternamn: {user[2]}, personnummer: {user[3]}, Ålder: {user[4]}")
+
+    input("\nTryck Enter för att fortsätta...")
+    clear_screen()
+    return
+
+def show_all_loans(crsr):
+    crsr.execute("""
+        SELECT users.förnamn, users.efternamn, books.title, books.author
+        FROM loans
+        JOIN users ON loans.user_id = users.id
+        JOIN books ON loans.books_id = books.id
+        WHERE loans.return_date IS NULL
+    """)
+
+    all_loans = crsr.fetchall()
+
+    print("----- Alla aktiva lån -----")
+
+    if not all_loans:
+        print("\nDet finns inga aktiva lån.")
+        input("\nTryck Enter för att fortsätta...")
+        clear_screen()
+        return
+    
+    for loan in all_loans:
+        print(f"{loan[0]} {loan[1]} lånar {loan[2]} av {loan[3]} ")
+
+    input("\nTryck Enter för att fortsätta...")
+    clear_screen()
+    return
 
 if __name__ == "__main__":
     main()
